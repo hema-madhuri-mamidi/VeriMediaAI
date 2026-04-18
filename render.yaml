@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: verimedia-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: ANTHROPIC_API_KEY
+        sync: false   # Set this manually in the Render dashboard
+      - key: ALLOWED_ORIGINS
+        sync: false   # Set to your Vercel frontend URL
+      - key: LOG_LEVEL
+        value: info
