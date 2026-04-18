@@ -1,0 +1,14 @@
+{
+  "name": "verimedia-ai",
+  "version": "1.0.0",
+  "description": "VeriMedia AI — Detection · Verification · Enforcement",
+  "private": true,
+  "workspaces": ["backend"],
+  "scripts": {
+    "install:backend": "cd backend && npm install",
+    "dev": "cd backend && npm run dev",
+    "start": "cd backend && npm start",
+    "test": "cd backend && npm test",
+    "build": "echo 'Frontend is static — no build step required'"
+  }
+}
