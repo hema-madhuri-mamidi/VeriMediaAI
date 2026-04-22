@@ -8,7 +8,7 @@ router.get('/', (_req, res) => {
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    anthropic: !!process.env.ANTHROPIC_API_KEY ? 'configured' : 'not configured (pass via header)',
+    gemini: !!process.env.GEMINI_API_KEY ? 'configured' : 'not configured (set GEMINI_API_KEY)',
   });
 });
 

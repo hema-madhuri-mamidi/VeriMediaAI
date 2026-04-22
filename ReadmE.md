@@ -2,7 +2,7 @@
 
 **Detection · Verification · Enforcement**
 
-AI-powered media rights enforcement platform. Upload content, detect unauthorized use across social platforms, and generate DMCA takedown reports — powered by Claude AI.
+AI-powered media rights enforcement platform. Upload content, detect unauthorized use across social platforms, and generate DMCA takedown reports — powered by Gemini AI.
 
 ---
 
@@ -12,14 +12,14 @@ AI-powered media rights enforcement platform. Upload content, detect unauthorize
 verimedia/
 ├── backend/          ← Node.js + Express API server
 │   ├── routes/
-│   │   ├── analyze.js      ← AI analysis pipeline (Claude)
+│   │   ├── analyze.js      ← AI analysis pipeline (Gemini)
 │   │   ├── fingerprint.js  ← Content DNA registration
 │   │   ├── report.js       ← DMCA + analysis export
 │   │   └── health.js       ← Health check
 │   ├── services/
 │   │   ├── detection.js    ← Fingerprinting, similarity, integrity
 │   │   ├── decisionEngine.js ← Trust thresholds + decision rules
-│   │   └── promptBuilder.js  ← Claude prompt templates
+│   │   └── promptBuilder.js  ← Gemini prompt templates
 │   ├── middleware/
 │   │   └── validate.js     ← Request validation
 │   └── server.js           ← Express app entry
@@ -48,7 +48,7 @@ cd backend && npm install
 
 ```bash
 cp backend/.env.example backend/.env
-# Edit backend/.env and add your ANTHROPIC_API_KEY
+# Edit backend/.env and add your GEMINI_API_KEY
 ```
 
 ### 3. Run the backend
@@ -98,7 +98,7 @@ Full AI analysis pipeline.
   "fileName": "video.mp4"
 }
 ```
-*Pass `X-Api-Key` header with your Anthropic key, or set `ANTHROPIC_API_KEY` server-side.*
+*Set `GEMINI_API_KEY` server-side in your environment variables.*
 
 ### `POST /api/analyze/ml`
 ML classifier — returns label + manipulation probability.
@@ -120,7 +120,7 @@ Generate a DMCA takedown report.
 Full analysis export (text bundle).
 
 ### `POST /api/report/ai-dmca`
-Claude-enhanced DMCA notice (requires API key).
+Gemini-enhanced DMCA notice (requires API key).
 
 ---
 
@@ -134,7 +134,7 @@ Claude-enhanced DMCA notice (requires API key).
 4. Set **Root Directory** to `backend`
 5. Build command: `npm install` | Start command: `npm start`
 6. Add environment variables:
-   - `ANTHROPIC_API_KEY` → your key
+   - `GEMINI_API_KEY` → your key
    - `ALLOWED_ORIGINS` → your Vercel frontend URL
    - `NODE_ENV` → `production`
 
@@ -167,8 +167,8 @@ Add these secrets to your GitHub repo (`Settings → Secrets → Actions`):
 
 The app supports two modes:
 
-1. **Server-side key** (recommended for production): Set `ANTHROPIC_API_KEY` in your Render env vars. Users never see the key.
-2. **Client-side key**: Users enter their own Anthropic API key in the UI. Passed as `X-Api-Key` header to your backend, which proxies to Anthropic. The key is never stored server-side.
+1. **Server-side key** (recommended for production): Set `GEMINI_API_KEY` in your Render env vars. Users never see the key.
+2. **Client-side key**: Users can optionally pass their own Gemini API key in the UI. Passed as `X-Api-Key` header to your backend, which proxies to Gemini. The key is never stored server-side.
 
 ---
 
@@ -176,7 +176,7 @@ The app supports two modes:
 
 - **Frontend**: Vanilla HTML/CSS/JS (no framework)
 - **Backend**: Node.js + Express
-- **AI**: Anthropic Claude Sonnet (`claude-sonnet-4-6`)&& Google Gemini 3.1 && Google AntiGravity
+- **AI**: Google Gemini (`gemini-1.5-flash`)
 - **Deploy**: Render (backend) + Vercel (frontend)
 - **CI/CD**: GitHub Actions
 - **Tests**: Jest + Supertest

@@ -1,6 +1,6 @@
 /**
  * VeriMedia API Client
- * Drop-in module that routes AI calls to the backend instead of directly to Anthropic.
+ * Drop-in module that routes AI calls to the backend instead of directly to AI providers.
  * Include this BEFORE the main verimedia script.
  * Set window.VERIMEDIA_API_URL to point to your backend.
  */
@@ -43,7 +43,7 @@
     /**
      * Run full analysis pipeline via backend
      * @param {Object} params - { scenario, contentType, matches, fileHash, fileSize, fileName }
-     * @param {string} apiKey - Anthropic API key (optional if set server-side)
+     * @param {string} apiKey - API key (optional if set server-side)
      */
     analyze: (params, apiKey) => post('/api/analyze', params, apiKey),
 
@@ -72,14 +72,14 @@
     analysisReport: (params) => post('/api/report/analysis', params),
 
     /**
-     * AI-enhanced DMCA notice via Claude
+     * AI-enhanced DMCA notice via Gemini
      */
     aiDmca: (params, apiKey) => post('/api/report/ai-dmca', params, apiKey),
   };
 
-  // ── Intercept callClaude to route through backend ─────────────────────────
+  // ── Intercept AI calls to route through backend ──────────────────────────
   // This patches the existing callClaude function once the page loads,
-  // so the frontend uses the backend as a proxy instead of calling Anthropic directly.
+  // so the frontend uses the backend as a proxy instead of calling AI providers directly.
   function patchCallClaude() {
     if (typeof window.callClaude !== 'function') return;
     const _orig = window.callClaude;

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { logger } = require('../utils/logger');
 
 // ── POST /api/report/dmca ─────────────────────────────────────────────────────
@@ -114,16 +114,17 @@ Detection · Verification · Enforcement`;
   res.json({ success: true, caseRef, report, generatedAt: new Date().toISOString() });
 });
 
+// ── Gemini Setup ───────────────────────────────────────────────────────
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
 // ── POST /api/report/ai-dmca ──────────────────────────────────────────────────
-// AI-enhanced DMCA using Claude for legal language
+// AI-enhanced DMCA using Gemini for legal language
 router.post('/ai-dmca', async (req, res) => {
   const { platform, user, analysisData, reporter } = req.body;
-  const apiKey = req.headers['x-api-key'] || process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(401).json({ error: 'API key required' });
   if (!platform) return res.status(400).json({ error: 'platform required' });
 
   try {
-    const client = new Anthropic({ apiKey });
     const sim = Math.round((analysisData?.match_score || 0.8) * 100);
     const prompt = `Draft a professional DMCA takedown notice for the following copyright infringement:
 Platform: ${platform}
@@ -134,12 +135,8 @@ Manipulation type: ${analysisData?.scenario || 'unauthorized repost'}
 
 Write a formal, legally-grounded notice in 150 words. Be precise and professional. Do not add disclaimers.`;
 
-    const r = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 400,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    const aiNotice = r.content.map(b => b.type === 'text' ? b.text : '').join('').trim();
+    const result = await model.generateContent(prompt);
+    const aiNotice = (await result.response).text().trim();
     const caseId = 'VM-' + Date.now().toString(36).toUpperCase();
     res.json({ success: true, caseId, aiNotice, generatedAt: new Date().toISOString() });
   } catch (err) {
