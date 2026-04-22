@@ -13,18 +13,20 @@ const healthRouter = require('./routes/health');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy for Render
+app.set('trust proxy', 1);
+
 // ── Security middleware ──────────────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }));
 
-// ── CORS ─────────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
+// CORS - Allow Vercel frontend and localhost
 app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) return cb(null, true);
-    cb(new Error('Not allowed by CORS'));
-  },
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: [
+    "http://localhost:3000",
+    "https://veri-media-ai-xi.vercel.app"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
 }));
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
