@@ -4811,6 +4811,26 @@ async function submitToReferenceDataset() {
   // Re-enable button for next use
   btn.disabled=false;
   btn.textContent='🗄 Register to Reference Dataset · Expand AI Knowledge Base';
+  // 🔥 CALL BACKEND (Gemini + Analysis)
+try {
+  showRDMStatus('🤖 Running AI analysis (Gemini)...', 'blue');
+
+  const analysisResult = await window.VeriMediaAPI.analyze({
+    scenario: newAsset.scenario,
+    contentType: contentType,
+    matches: [],
+    fileName: file.name,
+    fileSize: file.size
+  });
+
+  console.log("🔥 GEMINI RESULT:", analysisResult);
+
+  showRDMStatus('✅ Gemini analysis completed!', 'green');
+
+} catch (err) {
+  console.error("❌ Gemini Error:", err);
+  showRDMStatus('❌ Gemini analysis failed: ' + err.message, 'red');
+}
 }
 
 function showRDMStatus(msg, color) {
