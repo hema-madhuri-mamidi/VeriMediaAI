@@ -2059,7 +2059,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────
-const CLAUDE_API_URL='https://api.anthropic.com/v1/messages';
+// const CLAUDE_API_URL='https://api.anthropic.com/v1/messages'; // DISABLED - Use backend instead
 // ── API KEY MANAGEMENT ──────────────────────────────────────────────────────
 let _apiKey = localStorage.getItem('vm_api_key') || '';
 function getApiKey(){ return _apiKey; }
@@ -2079,10 +2079,10 @@ function showApiKeyModal(){
         </div>
       </div>
       <div style="font-size:10px;color:var(--text2);font-family:var(--mono);line-height:1.7;margin-bottom:16px;padding:10px 12px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);border-radius:6px">
-        VeriMedia AI uses the Anthropic Claude API to power its contextual reasoning engine. Your API key is stored locally in your browser and never sent anywhere except directly to <span style="color:var(--cyan)">api.anthropic.com</span>. Get a key at <span style="color:var(--blueL)">console.anthropic.com</span>.
+        VeriMedia AI uses the Gemini API via our secure backend to power its contextual reasoning engine. Your API key is stored locally in your browser and sent only to our secure backend proxy. Get a key at <span style="color:var(--blueL)">console.cloud.google.com</span>.
       </div>
-      <label style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-family:var(--mono);display:block;margin-bottom:6px">Anthropic API Key</label>
-      <input id="apiKeyInput" type="password" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false"
+      <label style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-family:var(--mono);display:block;margin-bottom:6px">Gemini API Key</label>
+      <input id="apiKeyInput" type="password" placeholder="AIza..." autocomplete="off" spellcheck="false"
         style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--mono);padding:10px 12px;outline:none;transition:border-color .15s;margin-bottom:12px"
         onfocus="this.style.borderColor='rgba(37,99,235,.5)'" onblur="this.style.borderColor='var(--border2)'"
         onkeydown="if(event.key==='Enter')document.getElementById('apiKeySave').click()">
@@ -2932,14 +2932,14 @@ function downloadReport() {
 }
 
 
-async function callClaude(prompt,maxT=700){
-  setAIStatus('processing');
-  const r=await fetch(CLAUDE_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxT,messages:[{role:'user',content:prompt}]})});
-  if(!r.ok)throw new Error('API '+r.status);
-  const d=await r.json();
-  setAIStatus('success');
-  return d.content.map(b=>b.type==='text'?b.text:'').join('');
-}
+// async function callClaude(prompt,maxT=700){
+//   setAIStatus('processing');
+//   const r=await fetch(CLAUDE_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxT,messages:[{role:'user',content:prompt}]})});
+//   if(!r.ok)throw new Error('API '+r.status);
+//   const d=await r.json();
+//   setAIStatus('success');
+//   return d.content.map(b=>b.type==='text'?b.text:'').join('');
+// }
 
 function setAIStatus(state){
   const pill=document.getElementById('aiStatusPill');
@@ -3813,7 +3813,7 @@ Examples:
 
 Return ONLY valid JSON (no markdown, no preamble):
 {"threat_type":"clean|tamper|threat","decision":"ALLOW|ATTRIBUTION|REVIEW REQUIRED|SUSPECT|TAKEDOWN|EMERGENCY_TAKEDOWN","severity":"LOW|MEDIUM|HIGH|CRITICAL","risk_label":"SAFE|SUSPECT|HIGH_RISK","confidence":0.0-1.0,"reasoning_points":["[value]% [signal] — [evidence-backed conclusion]","[value]% [signal] — [evidence-backed conclusion]","[value]% [signal] — [evidence-backed conclusion]"],"action":"precise next step for ${ct} content on ${m.platName}","recommended_action_for_content_type":"${contentTypeAction(ct)}","origin_traced":true,"dmca_needed":true|false}`;
-    const raw=await callClaude(prompt,700);aiR=safeJSON(raw);
+    // const raw=await callClaude(prompt,700);aiR=safeJSON(raw); // DISABLED - Use backend instead
   }catch(e){setAIStatus('fallback');}
 
   const isC=manip==='normal'||manip==='original'||manip==='education';
@@ -4069,8 +4069,8 @@ INSTRUCTIONS:
 
 Return ONLY valid JSON (no markdown, no preamble):
 {"subject":"Copyright Infringement Notice – Unauthorized Use of Protected Media – Case ${caseId}","body":"[full formal notice with all evidence numbers]","evidence_summary":"[2 sentences citing exact numbers]","evidence_json":{"case_id":"${caseId}","detection_timestamp":"${new Date().toUTCString()}","platform":"${pl}","infringing_account":"${user}","infringing_url":"${postUrl}","visual_similarity":${simPct},"integrity_score":${intPct},"ml_label":"${analysis.ml_label||'TAMPERED'}","ml_confidence":${mlPct},"manipulation_type":"${analysis.scenario||'unknown'}","decision":"${analysis.decision}","severity":"${analysis.severity}","risk_label":"${analysis.risk_label||'HIGH_RISK'}","content_type":"${ct}","original_asset_id":"vm-${caseId}","watermark_verified":true,"evidence_screenshots":["frame_comparison_${caseId}.png","heatmap_overlay_${caseId}.png","bbox_${caseId}.png"],"hash_match":"${genHash({name:pl+user,size:12345})}","privacy_mode":"hash_only","asset_encrypted":true},"claimant_name":"[Authorized Rights Holder]","organization":"VeriMedia AI Rights Management","original_asset_id":"vm-${caseId}","match_score":${simPct},"manipulation_details":"${analysis.scenario||'unauthorized'} modification — ${mlPct}% ML confidence · integrity loss ${100-intPct}%","action_recommendation":"1. Submit this notice to ${pl} Trust & Safety team immediately. 2. Monitor for re-uploads within 24 hours using VeriMedia tracking. 3. Escalate to legal counsel if not resolved in 48 hours.","next_action":"Submit to ${pl} legal/trust-safety team immediately"}`;
-    const raw=await callClaude(prompt,800);
-    const dmca=safeJSON(raw)||buildFallbackDMCA(pl,user,cap,ct,analysis,caseId);
+    // const raw=await callClaude(prompt,800); // DISABLED - Use backend instead
+    const dmca=buildFallbackDMCA(pl,user,cap,ct,analysis,caseId); // Use fallback only
     statD++;updStats();setSt('ps10','alert');setSt('ps10b','alert');
 
     // Log to case history as DMCA
@@ -4811,8 +4811,14 @@ async function submitToReferenceDataset() {
   // Re-enable button for next use
   btn.disabled=false;
   btn.textContent='🗄 Register to Reference Dataset · Expand AI Knowledge Base';
-  // 🔥 CALL BACKEND (Gemini + Analysis)
+
+  // CALL BACKEND (Gemini + Analysis)
 try {
+  // Ensure VeriMediaAPI is available
+  if (!window.VeriMediaAPI) {
+    throw new Error("API client not loaded - please refresh the page");
+  }
+  
   showRDMStatus('🤖 Running AI analysis (Gemini)...', 'blue');
 
   const analysisResult = await window.VeriMediaAPI.analyze({
@@ -6083,83 +6089,83 @@ function ruleBasedDecision(inputs, trust_score) {
   };
 }
 
-async function callClaudeReasoning(inputs, ruleResult, analysisId) {
-  const key = getApiKey();
-  if (!key) {
-    pipelineLog(analysisId, 'WARN', 'No API key configured — skipping VeriMedia AI reasoning. Click "Configure API Key" in nav to enable.');
-    return null;
-  }
-  pipelineLog(analysisId, 'DEC', 'Calling VeriMedia AI (claude-sonnet-4-20250514) for contextual reasoning analysis');
+// async function callClaudeReasoning(inputs, ruleResult, analysisId) { // DISABLED - Use backend instead
+//   const key = getApiKey();
+//   if (!key) {
+//     pipelineLog(analysisId, 'WARN', 'No API key configured — skipping VeriMedia AI reasoning. Click "Configure API Key" in nav to enable.');
+//     return null;
+//   }
+//   pipelineLog(analysisId, 'DEC', 'Calling VeriMedia AI (claude-sonnet-4-20250514) for contextual reasoning analysis');
 
-  const prompt = `You are an expert AI content rights enforcement system analyzing a digital media misuse detection result. Your role is to provide precise, actionable, and technically grounded assessments.
+//   const prompt = `You are an expert AI content rights enforcement system analyzing a digital media misuse detection result. Your role is to provide precise, actionable, and technically grounded assessments.
 
-PIPELINE DETECTION DATA:
-━━━━━━━━━━━━━━━━━━━━━━━
-• Visual Similarity Score:  ${(inputs.similarity_score*100).toFixed(1)}%  (FAISS cosine search, CLIP ViT-B/32 embeddings)
-• Manipulation Score:       ${(inputs.manipulation_score*100).toFixed(1)}%  (5-signal forensic analysis: noise, JPEG artifacts, histogram, edges, metadata)
-• Propagation Score:        ${(inputs.propagation_score*100).toFixed(1)}%  (cross-platform spread velocity model)
-• Attribution Present:      ${inputs.attribution_present ? 'YES' : 'NO'}
-• Timestamp Gap:            ${inputs.timestamp_diff_hours}h  (original predates this upload)
-• Content Type:             ${inputs.content_type || 'unknown'}
-• Detected Platform:        ${inputs.platform || 'unknown'}
-• Trust Score:              ${ruleResult.trust_score}/100  (weighted: 40% sim + 20% integrity + 20% propagation + 20% attribution)
-• Rule-Based Decision:      ${ruleResult.decision}
+// PIPELINE DETECTION DATA:
+// ━━━━━━━━━━━━━━━━━━━━━━━━
+// • Visual Similarity Score:  ${(inputs.similarity_score*100).toFixed(1)}%  (FAISS cosine search, CLIP ViT-B/32 embeddings)
+// • Manipulation Score:       ${(inputs.manipulation_score*100).toFixed(1)}%  (5-signal forensic analysis: noise, JPEG artifacts, histogram, edges, metadata)
+// • Propagation Score:        ${(inputs.propagation_score*100).toFixed(1)}%  (cross-platform spread velocity model)
+// • Attribution Present:      ${inputs.attribution_present ? 'YES' : 'NO'}
+// • Timestamp Gap:            ${inputs.timestamp_diff_hours}h  (original predates this upload)
+// • Content Type:             ${inputs.content_type || 'unknown'}
+// • Detected Platform:        ${inputs.platform || 'unknown'}
+// • Trust Score:              ${ruleResult.trust_score}/100  (weighted: 40% sim + 20% integrity + 20% propagation + 20% attribution)
+// • Rule-Based Decision:      ${ruleResult.decision}
 
-RULE-BASED REASONING CHAIN:
-${ruleResult.reasoning.map((r,i) => `  ${i+1}. ${r}`).join('\n')}
+// RULE-BASED REASONING CHAIN:
+// ${ruleResult.reasoning.map((r,i) => `  ${i+1}. ${r}`).join('\n')}
 
-OWNERSHIP INFERENCE:
-• Origin platform: ${inputs.origin_platform || 'undetermined'}
-• Origin confidence: ${inputs.origin_confidence ? (inputs.origin_confidence*100).toFixed(0)+'%' : 'N/A'}
-• Earliest known timestamp: ${inputs.origin_ts || 'unknown'}
+// OWNERSHIP INFERENCE:
+// • Origin platform: ${inputs.origin_platform || 'undetermined'}
+// • Origin confidence: ${inputs.origin_confidence ? (inputs.origin_confidence*100).toFixed(0)+'%' : 'N/A'}
+// • Earliest known timestamp: ${inputs.origin_ts || 'unknown'}
 
-YOUR TASK:
-Write a 2-3 sentence expert enforcement assessment. Be specific about:
-1. Why the trust score and decision are justified given the signal combination
-2. The primary risk vector (similarity + no attribution? manipulation? propagation?)
-3. The exact action the content rights team should take first
+// YOUR TASK:
+// Write a 2-3 sentence expert enforcement assessment. Be specific about:
+// 1. Why the trust score and decision are justified given the signal combination
+// 2. The primary risk vector (similarity + no attribution? manipulation? propagation?)
+// 3. The exact action the content rights team should take first
 
-Tone: authoritative, technical, concise. No bullet points. Plain text only. No markdown.`;
+// Tone: authoritative, technical, concise. No bullet points. Plain text only. No markdown.`;
 
-  try {
-    const resp = await fetch(CLAUDE_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 350,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    if (!resp.ok) {
-      const errData = await resp.json().catch(()=>({}));
-      const errMsg = errData.error?.message || `HTTP ${resp.status}`;
-      if (resp.status === 401) {
-        pipelineLog(analysisId, 'ERR', 'Invalid API key · click "Configure API Key" in nav bar to update');
-        setApiKey(''); updateApiKeyPill();
-      } else {
-        pipelineLog(analysisId, 'ERR', `Claude API error: ${errMsg}`);
-      }
-      return null;
-    }
-    const data = await resp.json();
-    const text = (data.content||[]).map(b => b.type === 'text' ? b.text : '').join('').trim();
-    if (!text) throw new Error('Empty response');
-    pipelineLog(analysisId, 'DEC', 'VeriMedia AI assessment complete · ' + text.split(' ').slice(0, 8).join(' ') + '...');
-    // Update API key pill to show success
-    const pill=document.getElementById('aiStatusPill');
-    if(pill){pill.className='npill ai-success';}
-    return text;
-  } catch (e) {
-    pipelineLog(analysisId, 'ERR', 'Claude API call failed · ' + e.message + ' · using rule-based output only');
-    return null;
-  }
-}
+//   try {
+//     const resp = await fetch(CLAUDE_API_URL, {
+//     method: 'POST',
+//     headers: {
+//       'Content-Type': 'application/json',
+//       'x-api-key': key,
+//       'anthropic-version': '2023-06-01',
+//       'anthropic-dangerous-direct-browser-access': 'true'
+//     },
+//     body: JSON.stringify({
+//       model: 'claude-sonnet-4-20250514',
+//       max_tokens: 350,
+//       messages: [{ role: 'user', content: prompt }]
+//     })
+//   });
+//     if (!resp.ok) {
+//       const errData = await resp.json().catch(()=>({}));
+//       const errMsg = errData.error?.message || `HTTP ${resp.status}`;
+//       if (resp.status === 401) {
+//         pipelineLog(analysisId, 'ERR', 'Invalid API key · click "Configure API Key" in nav bar to update');
+//         setApiKey(''); updateApiKeyPill();
+//       } else {
+//         pipelineLog(analysisId, 'ERR', `Claude API error: ${errMsg}`);
+//       }
+//       return null;
+//     }
+//     const data = await resp.json();
+//     const text = (data.content||[]).map(b => b.type === 'text' ? b.text : '').join('').trim();
+//     if (!text) throw new Error('Empty response');
+//     pipelineLog(analysisId, 'DEC', 'VeriMedia AI assessment complete · ' + text.split(' ').slice(0, 8).join(' ') + '...');
+//     // Update API key pill to show success
+//     const pill=document.getElementById('aiStatusPill');
+//     if(pill){pill.className='npill ai-success';}
+//     return text;
+//   } catch (e) {
+//     pipelineLog(analysisId, 'ERR', 'Claude API call failed · ' + e.message + ' · using rule-based output only');
+//     return null;
+//   }
+// }
 
 async function runDecisionEngine(analysisId, simResult, mlResult, viralData, contentType, platform, attributionPresent) {
   pipelineLog(analysisId, 'DEC', 'Aggregating signals for decision engine');
@@ -6181,7 +6187,8 @@ async function runDecisionEngine(analysisId, simResult, mlResult, viralData, con
   const ruleResult = ruleBasedDecision(inputs, trust_score);
   pipelineLog(analysisId, 'DEC', `Rule engine verdict: ${ruleResult.decision} (confidence: ${(ruleResult.confidence*100).toFixed(0)}%)`);
 
-  const claudeText = await callClaudeReasoning(inputs, ruleResult, analysisId);
+  // const claudeText = await callClaudeReasoning(inputs, ruleResult, analysisId); // DISABLED - Use backend instead
+  const claudeText = null; // Use rule-based reasoning only
   pipelineLog(analysisId, 'DEC', 'Final decision computed · rendering to UI');
 
   return { ...ruleResult, claude_reasoning: claudeText, inputs };
@@ -6883,5 +6890,9 @@ return {
 })();
 
 </script>
+
+<!-- VeriMedia API Client - Backend Integration -->
+<script src="apiClient.js"></script>
+
 </body>
 </html>
