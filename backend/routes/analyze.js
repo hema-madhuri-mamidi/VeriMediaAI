@@ -196,17 +196,22 @@ router.post('/', validateAnalysisRequest, async (req, res) => {
 
     // ── Step 2: Gemini Decision Reasoning ─────────────────────
     const decisionPrompt = buildDecisionPrompt({
-      scenario,
-      contentType,
-      sim,
-      integrity,
-      matches: processedMatches
-    });
+  scenario,
+  contentType,
+  sim,
+  integrity,
+  matches: processedMatches
+});
 
-    const decisionResult = await model.generateContent(decisionPrompt);
-    const decisionText = (await decisionResult.response).text();
+console.log("🔥 GEMINI CALLED");   // 👈 ADD THIS
 
-    const decResult = parseDecisionResponse(decisionText, sim, integrity, scenario);
+const decisionResult = await model.generateContent(decisionPrompt);
+
+console.log("✅ GEMINI RESPONSE RECEIVED"); // 👈 ADD THIS
+
+const decisionText = (await decisionResult.response).text();
+
+console.log("🧠 GEMINI OUTPUT:", decisionText); // 👈 OPTIONAL (best for proof)
 
     // ── Step 3: Gemini Embedding Interpretation ───────────────
     const embPrompt = buildEmbeddingPrompt({ scenario, sim, contentType });
