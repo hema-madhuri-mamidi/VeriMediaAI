@@ -172,18 +172,24 @@ const { buildDecisionPrompt, buildEmbeddingPrompt } = require('../services/promp
 const { computeFingerprint, calcSimilarity, calcIntegrity } = require('../services/detection');
 const { applyDecisionRules, buildReasoning } = require('../services/decisionEngine');
 
+const { logger } = require('../utils/logger');
+const { validateAnalysisRequest } = require('../middleware/validate');
+const { buildDecisionPrompt, buildEmbeddingPrompt } = require('../services/promptBuilder');
+const { computeFingerprint, calcSimilarity, calcIntegrity } = require('../services/detection');
+const { applyDecisionRules, buildReasoning } = require('../services/decisionEngine');
+
 // ── Gemini Setup ───────────────────────────────────────────────
 if (!process.env.GEMINI_API_KEY) {
   console.warn("WARNING: GEMINI_API_KEY missing - using fallback mode");
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+console.log("🔥 GEMINI MODEL:", "gemini-1.5-flash-001");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
 
 // ── POST /api/analyze ──────────────────────────────────────────
 router.post('/', validateAnalysisRequest, async (req, res) => {
   const { scenario, contentType, matches = [], fileSize, fileName } = req.body;
-
   try {
     // ── Step 1: Compute local signals ─────────────────────────
     const fingerprint = computeFingerprint(fileName || 'demo', fileSize || 2621440, scenario);
