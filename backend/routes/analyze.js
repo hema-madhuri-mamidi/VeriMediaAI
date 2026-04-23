@@ -160,13 +160,14 @@
 //   const s = (base[scenario] || 35) + matchCount * 4;
 //   return Math.min(99, Math.max(5, s));
 // }
-
 // module.exports = router;
 const express = require('express');
 const router = express.Router();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const { logger } = require('../utils/logger');
+const { logger } = require('../utils/logger');
+const { validateAnalysisRequest } = require('../middleware/validate');
 const { validateAnalysisRequest } = require('../middleware/validate');
 const { buildDecisionPrompt, buildEmbeddingPrompt } = require('../services/promptBuilder');
 const { computeFingerprint, calcSimilarity, calcIntegrity } = require('../services/detection');
@@ -178,13 +179,9 @@ if (!process.env.GEMINI_API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-console.log("🔥 GEMINI MODEL:", "gemini-1.5-flash-001");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
-
-// ── POST /api/analyze ──────────────────────────────────────────
-router.post('/', validateAnalysisRequest, async (req, res) => {
-  const { scenario, contentType, matches = [], fileSize, fileName } = req.body;
-  try {
+console.log(" GEMINI MODEL:", "gemini-1.5-flash-002");
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash-002"
     // ── Step 1: Compute local signals ─────────────────────────
     const fingerprint = computeFingerprint(fileName || 'demo', fileSize || 2621440, scenario);
 
@@ -202,46 +199,6 @@ router.post('/', validateAnalysisRequest, async (req, res) => {
     const decisionPrompt = buildDecisionPrompt({
       scenario,
       contentType,
-      sim,
-      integrity,
-      matches: processedMatches
-    });
-
-    let decisionText = "AI analysis unavailable";
-    try {
-      console.log("🔥 GEMINI CALLED");
-      console.log("📤 Prompt:", decisionPrompt);
-
-      const result = await model.generateContent(decisionPrompt);
-
-      if (!result || !result.response) {
-        throw new Error("Invalid Gemini response");
-      }
-
-      const response = await result.response;
-
-      // ✅ SAFE extraction (handles all formats)
-      if (typeof response.text === "function") {
-        decisionText = response.text();
-      } else if (response.candidates?.length > 0) {
-        decisionText = response.candidates[0]?.content?.parts?.[0]?.text ||
-          "No text in Gemini response";
-      } else {
-        decisionText = "Empty Gemini response";
-      }
-
-      console.log("✅ GEMINI RESPONSE RECEIVED");
-      console.log("🧠 GEMINI OUTPUT:", decisionText);
-
-    } catch (error) {
-      console.error("❌ GEMINI ERROR:", error.message);
-    }
-
-    const decisionTextUpper = decisionText.toUpperCase();
-    let decision = 'REVIEW';
-    if (decisionTextUpper.includes('EMERGENCY_TAKEDOWN') || decisionTextUpper.includes('EMERGENCY TAKEDOWN')) decision = 'EMERGENCY_TAKEDOWN';
-    else if (decisionTextUpper.includes('TAKEDOWN')) decision = 'TAKEDOWN';
-    else if (decisionTextUpper.includes('ALLOW')) decision = 'ALLOW';
     else if (decisionTextUpper.includes('REVIEW REQUIRED') || decisionTextUpper.includes('REVIEW')) decision = 'REVIEW';
 
     const lines = decisionText.split('\n').filter(l => l.trim().length > 10 && !l.includes('{') && !l.includes('}'));
