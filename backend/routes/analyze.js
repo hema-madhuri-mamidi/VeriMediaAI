@@ -13,7 +13,11 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash"
+  model: "gemini-1.5-flash",
+  generationConfig: {
+    temperature: 0.4,
+    maxOutputTokens: 300,
+  }
 });
 
 // ── POST /api/analyze ──────────────────────────────────────────
@@ -48,34 +52,15 @@ let decisionText = "AI analysis unavailable";
 try {
   console.log("🔥 GEMINI CALLED");
 
-  // prevent rate limit burst
-  await new Promise(res => setTimeout(res, 1000));
+  const result = await model.generateContent(decisionPrompt);
 
-  const result = await model.generateContent({
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: decisionPrompt }]
-      }
-    ]
-  });
-
-  const response = result.response;
-
-  if (response?.candidates?.length > 0) {
-    decisionText =
-      response.candidates[0].content.parts[0].text || "No response";
-  }
+  decisionText = result.response.text();
 
   console.log("✅ GEMINI RESPONSE RECEIVED");
   console.log("🧠 OUTPUT:", decisionText);
 
 } catch (error) {
   console.error("❌ GEMINI ERROR:", error.message);
-
-  if (error.message.includes("429")) {
-    decisionText = "AI temporarily unavailable (rate limit)";
-  }
 }
     // ── Step 4: Local scoring logic (UNCHANGED) ───────────────
     const trustScore = sim * integrity;
