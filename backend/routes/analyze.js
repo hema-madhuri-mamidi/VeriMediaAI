@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const { logger } = require('../utils/logger');
 const { validateAnalysisRequest } = require('../middleware/validate');
@@ -8,21 +7,13 @@ const { buildDecisionPrompt, buildEmbeddingPrompt } = require('../services/promp
 const { computeFingerprint, calcSimilarity, calcIntegrity } = require('../services/detection');
 const { applyDecisionRules, buildReasoning } = require('../services/decisionEngine');
 
-// ── Global Rate Limiter for Gemini ─────────────────────────────
-let lastGeminiCall = 0;
-const GEMINI_COOLDOWN = 2000; // 2 seconds
-
 // ── Gemini Setup ───────────────────────────────────────────────
-if (!process.env.GEMINI_API_KEY) {
-  console.warn("WARNING: GEMINI_API_KEY missing - using fallback mode");
-}
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// const model = genAI.getGenerativeModel({
-//   model: "gemini-1.5-flash-002"
-// });
+
 const model = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash"
+  model: "gemini-1.5-flash"
 });
 
 // ── POST /api/analyze ──────────────────────────────────────────
@@ -44,140 +35,48 @@ router.post('/', validateAnalysisRequest, async (req, res) => {
     const integrity = topMatch?.integrity ?? 0.5;
 
     // ── Step 2: Gemini Decision Reasoning ─────────────────────
-//     const decisionPrompt = buildDecisionPrompt({
-//       scenario,
-//       contentType,
-//       sim,
-//       integrity,
-//       matches: processedMatches
-//     });
-
-//     let decisionText = "AI analysis unavailable";
-
-// try {
-//   console.log("🔥 GEMINI CALLED");
-//   console.log("Prompt:", decisionPrompt);
-
-//   const result = await model.generateContent({
-//     contents: [
-//       {
-//         role: "user",
-//         parts: [{ text: decisionPrompt }]
-//       }
-//     ]
-//   });
-
-//   const response = result.response;
-
-//   if (response && response.candidates && response.candidates.length > 0) {
-//     decisionText = response.candidates[0].content.parts[0].text;
-//   } else {
-//     console.warn("⚠ No Gemini candidates returned");
-//   }
-
-//   console.log("✅ GEMINI RESPONSE RECEIVED");
-//   console.log("🧠 OUTPUT:", decisionText);
-
-// } catch (error) {
-//   console.error("❌ GEMINI ERROR:", error.message);
-// }
-
-//     const decisionTextUpper = decisionText.toUpperCase();
-//     let decision = 'REVIEW';
-//     if (decisionTextUpper.includes('EMERGENCY_TAKEDOWN') || decisionTextUpper.includes('EMERGENCY TAKEDOWN')) decision = 'EMERGENCY_TAKEDOWN';
-//     else if (decisionTextUpper.includes('TAKEDOWN')) decision = 'TAKEDOWN';
-//     else if (decisionTextUpper.includes('ALLOW')) decision = 'ALLOW';
-//     else if (decisionTextUpper.includes('REVIEW REQUIRED') || decisionTextUpper.includes('REVIEW')) decision = 'REVIEW';
-
-//     const lines = decisionText.split('\n').filter(l => l.trim().length > 10 && !l.includes('{') && !l.includes('}'));
-//     const aiReasoning = lines.slice(0, 4).map(l => l.replace(/^[-\d.]\s*/, '').trim()).filter(Boolean);
-
-//     const decResult = { decision, reasoning: aiReasoning, trust_score: sim * integrity };
-
-//     // ── Step 3: Gemini Embedding Interpretation ───────────────
-//     const embPrompt = buildEmbeddingPrompt({ scenario, sim, contentType });
-
-//     let embText = "Embedding analysis unavailable";
-//     try {
-//       console.log("GEMINI EMBEDDING CALLED");
-//       const embResultRaw = await model.generateContent(embPrompt);
-//       embText = (await embResultRaw.response).text();
-//       console.log("GEMINI EMBEDDING RECEIVED");
-//     } catch (error) {
-//       console.error("GEMINI EMBEDDING ERROR:", error.message);
-//       embText = "Embedding analysis unavailable - using fallback";
-//     }
-
-//     const embResult = {
-//       similarity_score: sim,
-//       interpretation: embText.trim()
-//     };
-// ── Step 2: Single Gemini call (combined decision + embedding) ─
 const decisionPrompt = buildDecisionPrompt({
-  scenario, contentType, sim, integrity, matches: processedMatches
+  scenario,
+  contentType,
+  sim,
+  integrity,
+  matches: processedMatches
 });
 
-const embPrompt = buildEmbeddingPrompt({ scenario, sim, contentType });
-
-const combinedPrompt = `${decisionPrompt}
-
----
-
-Also answer this second question:
-${embPrompt}`;
-
 let decisionText = "AI analysis unavailable";
-let embText = "Embedding analysis unavailable";
 
-const now = Date.now();
+try {
+  console.log("🔥 GEMINI CALLED");
 
-if (now - lastGeminiCall < GEMINI_COOLDOWN) {
-  console.log("⏳ Skipping Gemini (rate limit protection)");
-} else {
-  lastGeminiCall = now;
+  // prevent rate limit burst
+  await new Promise(res => setTimeout(res, 1000));
 
-  try {
-    console.log("🔥 GEMINI CALLED");
+  const result = await model.generateContent({
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: decisionPrompt }]
+      }
+    ]
+  });
 
-    // small delay to avoid burst requests
-    await new Promise(res => setTimeout(res, 1200));
+  const response = result.response;
 
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: combinedPrompt }]
-        }
-      ]
-    });
+  if (response?.candidates?.length > 0) {
+    decisionText =
+      response.candidates[0].content.parts[0].text || "No response";
+  }
 
-    const response = result.response;
-    const fullText = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  console.log("✅ GEMINI RESPONSE RECEIVED");
+  console.log("🧠 OUTPUT:", decisionText);
 
-    // Split response — first half is decision, second half is embedding
-    const parts = fullText.split('---');
-    decisionText = parts[0]?.trim() || fullText;
-    embText = parts[1]?.trim() || "Embedding analysis unavailable";
+} catch (error) {
+  console.error("❌ GEMINI ERROR:", error.message);
 
-    console.log("✅ GEMINI RESPONSE RECEIVED");
-    console.log("🧠 OUTPUT:", decisionText);
-
-  } catch (error) {
-    console.error("❌ GEMINI ERROR:", error.message);
-
-    // Handle 429 specifically
-    if (error.message && error.message.includes("429")) {
-      console.warn("⚠ Gemini rate limit hit");
-      decisionText = "AI temporarily unavailable due to high usage";
-    }
+  if (error.message.includes("429")) {
+    decisionText = "AI temporarily unavailable (rate limit)";
   }
 }
-
-// ── Step 3 is now removed — embText already set above ─────────
-const embResult = {
-  similarity_score: sim,
-  interpretation: embText
-};
     // ── Step 4: Local scoring logic (UNCHANGED) ───────────────
     const trustScore = sim * integrity;
     const viralScore = computeViralScore(scenario, processedMatches.length);
