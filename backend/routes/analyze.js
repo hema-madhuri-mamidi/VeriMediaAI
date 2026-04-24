@@ -8,6 +8,10 @@ const { buildDecisionPrompt, buildEmbeddingPrompt } = require('../services/promp
 const { computeFingerprint, calcSimilarity, calcIntegrity } = require('../services/detection');
 const { applyDecisionRules, buildReasoning } = require('../services/decisionEngine');
 
+// ── Global Rate Limiter for Gemini ─────────────────────────────
+let lastGeminiCall = 0;
+const GEMINI_COOLDOWN = 2000; // 2 seconds
+
 // ── Gemini Setup ───────────────────────────────────────────────
 if (!process.env.GEMINI_API_KEY) {
   console.warn("WARNING: GEMINI_API_KEY missing - using fallback mode");
@@ -125,24 +129,48 @@ ${embPrompt}`;
 let decisionText = "AI analysis unavailable";
 let embText = "Embedding analysis unavailable";
 
-try {
-  console.log("🔥 GEMINI CALLED (combined)");
+const now = Date.now();
 
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: combinedPrompt }] }]
-  });
+if (now - lastGeminiCall < GEMINI_COOLDOWN) {
+  console.log("⏳ Skipping Gemini (rate limit protection)");
+} else {
+  lastGeminiCall = now;
 
-  const fullText = result.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  try {
+    console.log("🔥 GEMINI CALLED");
 
-  // Split response — first half is decision, second half is embedding
-  const parts = fullText.split('---');
-  decisionText = parts[0]?.trim() || fullText;
-  embText = parts[1]?.trim() || fullText;
+    // small delay to avoid burst requests
+    await new Promise(res => setTimeout(res, 1200));
 
-  console.log("✅ GEMINI RESPONSE RECEIVED");
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: combinedPrompt }]
+        }
+      ]
+    });
 
-} catch (error) {
-  console.error("❌ GEMINI ERROR:", error.message);
+    const response = result.response;
+    const fullText = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    // Split response — first half is decision, second half is embedding
+    const parts = fullText.split('---');
+    decisionText = parts[0]?.trim() || fullText;
+    embText = parts[1]?.trim() || "Embedding analysis unavailable";
+
+    console.log("✅ GEMINI RESPONSE RECEIVED");
+    console.log("🧠 OUTPUT:", decisionText);
+
+  } catch (error) {
+    console.error("❌ GEMINI ERROR:", error.message);
+
+    // Handle 429 specifically
+    if (error.message && error.message.includes("429")) {
+      console.warn("⚠ Gemini rate limit hit");
+      decisionText = "AI temporarily unavailable due to high usage";
+    }
+  }
 }
 
 // ── Step 3 is now removed — embText already set above ─────────
