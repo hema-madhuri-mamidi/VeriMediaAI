@@ -13,11 +13,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
-  generationConfig: {
-    temperature: 0.4,
-    maxOutputTokens: 300,
-  }
+  model: "gemini-pro"
 });
 
 // ── POST /api/analyze ──────────────────────────────────────────
@@ -61,6 +57,10 @@ try {
 
 } catch (error) {
   console.error("❌ GEMINI ERROR:", error.message);
+
+  if (error.message.includes("429")) {
+    decisionText = "AI temporarily unavailable (rate limit)";
+  }
 }
     // ── Step 4: Local scoring logic (UNCHANGED) ───────────────
     const trustScore = sim * integrity;
